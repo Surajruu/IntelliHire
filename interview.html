@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IntelHire - Interview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-tr from-gray-900 to-blue-900 text-white min-h-screen flex flex-col items-center justify-center p-6 relative">
+
+  <!-- 🔙 Back to Home Button -->
+  <a href="studentint.html" class="absolute top-6 left-6 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
+    ← Back to Home
+  </a>
+
+  <div class="bg-white text-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-2xl mt-12">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">🎙️ Interview Panel</h1>
+
+    <div class="mb-6">
+      <label for="jobRole" class="block text-lg font-semibold mb-2">Select Job Role:</label>
+      <select id="jobRole" class="w-full p-3 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">-- Choose a role --</option>
+        <option value="Frontend Developer">Frontend Developer</option>
+        <option value="Backend Developer">Backend Developer</option>
+        <option value="Data Analyst">Data Analyst</option>
+        <option value="AI/ML Engineer">AI/ML Engineer</option>
+      </select>
+    </div>
+
+    <div class="mb-6 flex flex-col items-center">
+      <video id="video" width="400" height="300" class="rounded-xl border border-blue-500" autoplay muted></video>
+    </div>
+
+    <div class="flex justify-center space-x-6">
+      <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg">
+        Start Interview
+      </button>
+      <button id="stopBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg" disabled>
+        Stop Interview
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const jobRoleSelect = document.getElementById('jobRole');
+    let mediaRecorder;
+    let recordedChunks = [];
+    let questionIndex = 0;
+    let selectedQuestions = [];
+    let questionTimer;
+
+    const questions = {
+      "Frontend Developer": [
+        "What are the key features of React?",
+        "Explain the Virtual DOM.",
+        "How does CSS specificity work?",
+        "Difference between var, let, and const?",
+        "Explain event delegation in JavaScript.",
+        "What is the box model in CSS?",
+        "What is the purpose of state in React?",
+        "What is the use of useEffect in React?",
+        "What is a Higher-Order Component?",
+        "What is the role of webpack?"
+      ],
+      "Backend Developer": [
+        "What is RESTful API?",
+        "Explain SQL vs NoSQL.",
+        "How do you secure backend apps?",
+        "What is JWT and how does it work?",
+        "What is middleware in Express.js?",
+        "What are microservices?",
+        "How does load balancing work?",
+        "Explain database indexing.",
+        "What is a deadlock?",
+        "How do you handle authentication?"
+      ],
+      "Data Analyst": [
+        "What is data normalization?",
+        "What is p-value in statistics?",
+        "Explain outlier treatment methods.",
+        "What tools do you use for visualization?",
+        "Difference between inner and outer join.",
+        "What is data wrangling?",
+        "Explain linear regression.",
+        "How do you handle missing data?",
+        "What is correlation vs causation?",
+        "What are key KPIs to track?"
+      ],
+      "AI/ML Engineer": [
+        "Difference between supervised & unsupervised learning?",
+        "What is overfitting and how to avoid it?",
+        "Explain gradient descent.",
+        "What is a confusion matrix?",
+        "Explain decision trees.",
+        "What are activation functions?",
+        "What is backpropagation?",
+        "How do you evaluate ML models?",
+        "What is cross-validation?",
+        "Explain ensemble methods."
+      ]
+    };
+
+    function showQuestion(text, duration) {
+      const questionBox = document.createElement('div');
+      questionBox.className = "fixed bottom-10 bg-blue-700 text-white text-xl font-semibold px-6 py-3 rounded-xl shadow-lg z-50";
+      questionBox.innerText = text;
+      document.body.appendChild(questionBox);
+
+      questionTimer = setTimeout(() => {
+        questionBox.remove();
+        questionIndex++;
+        if (questionIndex < selectedQuestions.length) {
+          showQuestion(selectedQuestions[questionIndex], 35000); // 35s for next questions
+        }
+      }, duration);
+    }
+
+    async function startInterview() {
+      const selectedRole = jobRoleSelect.value;
+      if (!selectedRole || !questions[selectedRole]) {
+        alert("Please select a valid job role first.");
+        return;
+      }
+
+      jobRoleSelect.disabled = true; // 🔒 Lock the job role selection
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      video.srcObject = stream;
+
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'interview_recording.webm';
+        a.click();
+      };
+
+      mediaRecorder.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      const roleQuestions = [...questions[selectedRole]];
+      for (let i = roleQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [roleQuestions[i], roleQuestions[j]] = [roleQuestions[j], roleQuestions[i]];
+      }
+
+      selectedQuestions = ["Tell us about yourself"];
+      selectedQuestions.push(...roleQuestions.slice(0, 5)); // Only 5 questions after intro
+      questionIndex = 0;
+      showQuestion(selectedQuestions[questionIndex], 30000); // 30s for "Tell us about yourself"
+    }
+
+    function stopInterview() {
+      clearTimeout(questionTimer);
+      mediaRecorder.stop();
+      const tracks = video.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      jobRoleSelect.disabled = false; // 🔓 Re-enable job role selection after stop
+    }
+
+    startBtn.addEventListener('click', startInterview);
+    stopBtn.addEventListener('click', stopInterview);
+  </script>
+
+</body>
+</html>

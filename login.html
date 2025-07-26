@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intel Hire - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); }}
+    @keyframes logoFadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); }}
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; }}
+    #logo-splash {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000;
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+      animation: fadeOut 0.5s ease-in forwards; animation-delay: 2s;
+    }
+    #logo-splash img { animation: logoFadeIn 1s ease-out forwards;}
+    #login-container { opacity: 0; animation: fadeIn 1s ease-in forwards; animation-delay: 2.5s;}
+    .role-selector input:checked + label {
+      background-color: #0067A3; color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .floating-text {
+      position: absolute; font-weight: 600; font-size: 1rem; opacity: 0;
+      transition: opacity 0.4s ease-in-out; pointer-events: none; z-index: 0; white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen p-4">
+  <!-- Splash Screen -->
+  <div id="logo-splash">
+    <img src="./IntelHire-image-3.png" alt="Intel Hire Logo" class="h-24 rounded-lg" />
+  </div>
+
+  <!-- Login Container -->
+  <div id="login-container" class="bg-gray-900 w-full max-w-md p-8 rounded-2xl shadow-lg shadow-blue-500/10 relative overflow-hidden">
+    <div class="relative z-10">
+      <div class="text-center mb-8">
+        <img src="./IntelHire-image-3.png" alt="Intel Hire Logo" class="mx-auto mb-4 h-24 rounded-lg" />
+        <h1 class="text-2xl font-bold text-white">Welcome to Intel Hire</h1>
+        <p class="text-gray-400 mt-2">Sign in to connect with talent and opportunity.</p>
+      </div>
+
+      <form id="login-form">
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-300 mb-2">I am a...</label>
+          <div class="role-selector flex bg-gray-800 rounded-full p-1">
+            <input type="radio" id="student" name="role" value="student" class="hidden" checked />
+            <label for="student" class="w-1/2 text-center py-2 rounded-full cursor-pointer font-semibold text-gray-400">Student</label>
+            <input type="radio" id="recruiter" name="role" value="recruiter" class="hidden" />
+            <label for="recruiter" class="w-1/2 text-center py-2 rounded-full cursor-pointer font-semibold text-gray-400">Recruiter</label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email"
+            class="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
+            required />
+        </div>
+
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password"
+            class="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
+            required />
+        </div>
+
+        <button type="submit"
+          class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
+          Sign In
+        </button>
+
+        <p id="error" class="text-red-500 text-center mt-4 hidden"></p>
+
+        <div class="text-center mt-6">
+          <a href="#" class="text-sm font-medium text-blue-500 hover:underline">Forgot Password?</a>
+          <span class="mx-2 text-gray-500">|</span>
+          <a href="./signup.html" class="text-sm font-medium text-blue-500 hover:underline">Create an Account</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase Setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCsPeUD_ZBKHVItI8G5hNLLHHapM8EHcaE",
+      authDomain: "intelhire-62530.firebaseapp.com",
+      projectId: "intelhire-62530",
+      storageBucket: "intelhire-62530.appspot.com",
+      messagingSenderId: "1035866726805",
+      appId: "1:1035866726805:web:330ef8a11ca47d7efc569c",
+      measurementId: "G-EQE5CQGBL3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const role = document.querySelector('input[name="role"]:checked').value;
+      const errorMsg = document.getElementById('error');
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(userCredential => {
+          if (role === 'student') {
+            window.location.href = "./studentint.html";
+          } else if (role === 'recruiter') {
+            window.location.href = "./recruiter-dashboard.html";
+          }
+        })
+        .catch(error => {
+          console.error(error.code, error.message);
+          errorMsg.textContent = "Invalid email or password.";
+          errorMsg.classList.remove("hidden");
+        });
+    });
+  </script>
+
+  <!-- Splash Animation & Floating Text Logic (Optional) -->
+  <script>
+    window.onload = () => {
+      const splash = document.getElementById('logo-splash');
+      splash.addEventListener('animationend', () => splash.remove());
+
+      const container = document.getElementById('login-container');
+      const opportunities = ['Software Engineer', 'UX/UI Designer', 'Validation Engineer', 'AI Research', 'Product Manager', 'SoC Design Engineer'];
+      const colors = ['#60A5FA', '#F87171', '#4ADE80', '#FBBF24', '#A78BFA', '#2DD4BF'];
+
+      opportunities.forEach(text => {
+        const el = document.createElement('div');
+        el.classList.add('floating-text');
+        el.textContent = text;
+        el.style.color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.top = `${Math.random() * 90}%`;
+        el.style.left = `${Math.random() * 90}%`;
+        el.style.transform = `rotate(${Math.random() * 60 - 30}deg)`;
+        container.appendChild(el);
+      });
+
+      container.addEventListener('mousemove', e => {
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        document.querySelectorAll('.floating-text').forEach(textEl => {
+          const elRect = textEl.getBoundingClientRect();
+          const elX = elRect.left - rect.left + elRect.width / 2;
+          const elY = elRect.top - rect.top + elRect.height / 2;
+          const distance = Math.hypot(x - elX, y - elY);
+          textEl.style.opacity = distance < 100 ? '0.5' : '0';
+        });
+      });
+    };
+  </script>
+</body>
+</html>

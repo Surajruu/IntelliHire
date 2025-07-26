@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple transition for screen switching */
+        .screen {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .result-item {
+            border-left-width: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-8">
+
+    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+
+        <!-- Screen 1: Select Quiz Type (Initially Visible) -->
+        <div id="select-screen" class="screen">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl font-extrabold text-gray-800">Choose Your Challenge</h1>
+                <p class="text-gray-500 mt-2">Select a category to test your skills.</p>
+            </header>
+
+            <!-- Quiz Options -->
+            <div class="space-y-4">
+                <button id="start-logical-quiz" class="w-full text-left p-6 flex items-center bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded-xl shadow-md transition-transform transform hover:scale-105">
+                    <span class="text-3xl mr-4">🤔</span>
+                    <div>
+                        <h2 class="text-xl font-bold">Logical Reasoning</h2>
+                        <p class="text-sm opacity-80">Test your problem-solving and critical thinking skills.</p>
+                    </div>
+                </button>
+                <button id="start-aptitude-quiz" class="w-full text-left p-6 flex items-center bg-green-400 hover:bg-green-500 text-green-900 rounded-xl shadow-md transition-transform transform hover:scale-105">
+                     <span class="text-3xl mr-4">📊</span>
+                    <div>
+                        <h2 class="text-xl font-bold">Aptitude</h2>
+                        <p class="text-sm opacity-80">Challenge your numerical and problem-solving abilities.</p>
+                    </div>
+                </button>
+                <button id="start-technical-quiz" class="w-full text-left p-6 flex items-center bg-indigo-400 hover:bg-indigo-500 text-indigo-900 rounded-xl shadow-md transition-transform transform hover:scale-105">
+                     <span class="text-3xl mr-4">💻</span>
+                    <div>
+                        <h2 class="text-xl font-bold">Technical</h2>
+                        <p class="text-sm opacity-80">Assess your knowledge of core technology concepts.</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Quiz Screen (Reused for all quiz types) -->
+        <div id="quiz-screen" class="hidden screen">
+            <!-- Start View -->
+            <div id="start-view" class="text-center">
+                <!-- Title and description will be set by JS -->
+                <h1 id="quiz-title" class="text-4xl font-extrabold text-gray-800 mb-2"></h1>
+                <p id="quiz-description" class="text-gray-600 mb-8"></p>
+                <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition duration-300 shadow-lg">Start Quiz</button>
+            </div>
+
+            <!-- Question View (hidden initially) -->
+            <div id="question-view" class="hidden">
+                <div id="question-header" class="flex justify-between items-center border-b-2 pb-4 mb-6">
+                    <h2 id="question-text" class="text-xl font-semibold text-gray-800 leading-tight"></h2>
+                    <span id="question-counter" class="text-gray-500 font-medium bg-gray-100 py-1 px-3 rounded-full text-sm"></span>
+                </div>
+                <div id="options-container" class="space-y-3">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                <div id="action-buttons" class="mt-6 flex justify-between items-center">
+                    <button id="end-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">End Quiz</button>
+                    <button id="skip-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition duration-300">Skip</button>
+                </div>
+            </div>
+
+            <!-- Score View (hidden initially) -->
+            <div id="score-view" class="hidden text-center">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Quiz Completed! 🎉</h1>
+                
+                <div id="score-summary" class="flex justify-around items-center p-4 my-6 bg-gray-50 rounded-lg shadow-inner">
+                    <!-- Summary items will be injected here by JS -->
+                </div>
+                
+                <div id="results-container" class="mt-6 text-left space-y-4 max-h-80 overflow-y-auto pr-4">
+                    <!-- Results will be dynamically inserted here -->
+                </div>
+                
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mt-8">
+                    <button id="download-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-300">Download Results</button>
+                    <button id="restart-btn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-300">Try Again</button>
+                    <button id="back-to-selection-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg text-lg transition duration-300">Change Quiz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS ---
+            const selectScreen = document.getElementById('select-screen');
+            const quizScreen = document.getElementById('quiz-screen');
+            const startLogicalQuizBtn = document.getElementById('start-logical-quiz');
+            const startAptitudeQuizBtn = document.getElementById('start-aptitude-quiz');
+            const startTechnicalQuizBtn = document.getElementById('start-technical-quiz');
+
+            const startView = document.getElementById('start-view');
+            const questionView = document.getElementById('question-view');
+            const scoreView = document.getElementById('score-view');
+            
+            const quizTitle = document.getElementById('quiz-title');
+            const quizDescription = document.getElementById('quiz-description');
+
+            const startBtn = document.getElementById('start-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const backToSelectionBtn = document.getElementById('back-to-selection-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const skipBtn = document.getElementById('skip-btn');
+            const endQuizBtn = document.getElementById('end-quiz-btn');
+
+            const questionText = document.getElementById('question-text');
+            const questionCounter = document.getElementById('question-counter');
+            const optionsContainer = document.getElementById('options-container');
+            
+            const scoreSummary = document.getElementById('score-summary');
+            const resultsContainer = document.getElementById('results-container');
+
+            // --- QUIZ DATA & STATE ---
+            const allLogicalQuestions = [
+                { question: "Look at this series: 7, 10, 8, 11, 9, 12, ... What number should come next?", options: ["7", "10", "12", "13"], answer: "10" },
+                { question: "CUP : LIP :: BIRD : ?", options: ["BUSH", "GRASS", "FOREST", "BEAK"], answer: "BEAK" },
+                { question: "Pointing to a photograph, a man said, 'I have no brother, and that man's father is my father's son.' Whose photograph was it?", options: ["His own", "His son's", "His father's", "His nephew's"], answer: "His son's" },
+                { question: "Which word does not belong with the others?", options: ["Inch", "Ounce", "Centimeter", "Yard"], answer: "Ounce" },
+                { question: "Look at this series: 36, 34, 30, 28, 24, ... What number should come next?", options: ["20", "22", "23", "26"], answer: "22" },
+                { question: "Find the odd one out: 3, 5, 11, 14, 17, 21.", options: ["21", "17", "14", "3"], answer: "14" },
+                { question: "SCD, TEF, UGH, ____, WKL", options: ["CMN", "UJI", "VIJ", "IJT"], answer: "VIJ" },
+            ];
+            
+            // EXPANDED: Aptitude questions bank
+            const allAptitudeQuestions = [
+                { question: "What is 25% of 200?", options: ["25", "50", "75", "100"], answer: "50" },
+                { question: "A car travels at 60 km/h. How far will it travel in 2.5 hours?", options: ["120 km", "150 km", "180 km", "100 km"], answer: "150 km" },
+                { question: "If 5 workers can build a wall in 12 days, how many days will it take 3 workers?", options: ["15", "18", "20", "22"], answer: "20" },
+                { question: "An item was bought for $80 and sold for $100. What is the profit percentage?", options: ["20%", "25%", "30%", "15%"], answer: "25%" },
+                { question: "The sum of two numbers is 35 and their difference is 13. What are the numbers?", options: ["20 and 15", "24 and 11", "22 and 13", "26 and 9"], answer: "24 and 11" },
+                { question: "Calculate the simple interest on $5000 for 2 years at 5% per annum.", options: ["$250", "$500", "$750", "$1000"], answer: "$500" },
+                { question: "A train 100m long is running at a speed of 30 km/hr. Find the time taken by it to pass a man standing near the railway line.", options: ["10 seconds", "12 seconds", "15 seconds", "8 seconds"], answer: "12 seconds" },
+                { question: "The average of 5 numbers is 27. If one number is excluded, the average becomes 25. What is the excluded number?", options: ["35", "27", "40", "25"], answer: "35" },
+                { question: "What is the next number in the series: 2, 6, 12, 20, 30, ...?", options: ["40", "42", "44", "46"], answer: "42" },
+                { question: "A tank can be filled by a pipe in 5 hours and emptied by another pipe in 4 hours. If both pipes are opened when the tank is full, how long will it take to empty the tank?", options: ["9 hours", "1 hour", "20 hours", "4.5 hours"], answer: "20 hours" },
+                { question: "A boat can travel with a speed of 13 km/hr in still water. If the speed of the stream is 4 km/hr, find the time taken by the boat to go 68 km downstream.", options: ["4 hours", "5 hours", "3 hours", "2 hours"], answer: "4 hours" },
+                { question: "If a:b = 5:9 and b:c = 4:7, find a:b:c.", options: ["20:36:63", "5:36:63", "20:9:7", "5:4:7"], answer: "20:36:63" },
+                { question: "A man buys a cycle for $1400 and sells it at a loss of 15%. What is the selling price of the cycle?", options: ["$1190", "$1200", "$1210", "$1160"], answer: "$1190" },
+                { question: "The sum of ages of 5 children born at the intervals of 3 years each is 50 years. What is the age of the youngest child?", options: ["4 years", "8 years", "10 years", "None of these"], answer: "4 years" },
+                { question: "A fruit seller had some apples. He sells 40% apples and still has 420 apples. Originally, he had:", options: ["588 apples", "600 apples", "672 apples", "700 apples"], answer: "700 apples" },
+                { question: "What is the square root of 2025?", options: ["35", "45", "55", "65"], answer: "45" },
+                { question: "A person crosses a 600 m long street in 5 minutes. What is his speed in km per hour?", options: ["3.6", "7.2", "8.4", "10"], answer: "7.2" },
+                { question: "Find the value of (0.00032)^(3/5)", options: ["0.008", "0.08", "0.0008", "0.8"], answer: "0.008" },
+                { question: "Two numbers are in the ratio 3:5. If 9 is subtracted from each, the new numbers are in the ratio 12:23. The smaller number is:", options: ["27", "33", "49", "55"], answer: "33" },
+                { question: "The cost price of 20 articles is the same as the selling price of x articles. If the profit is 25%, then the value of x is:", options: ["15", "16", "18", "25"], answer: "16" },
+                { question: "What is the value of log2(8)?", options: ["2", "3", "4", "1"], answer: "3" },
+                { question: "A can do a piece of work in 7 days of 9 hours each and B can do it in 6 days of 7 hours each. How long will they take to do it, working together 8 2/5 hours a day?", options: ["3 days", "4 days", "5 days", "2 days"], answer: "3 days" },
+                { question: "A sum of money at simple interest amounts to Rs. 815 in 3 years and to Rs. 854 in 4 years. The sum is:", options: ["Rs. 650", "Rs. 690", "Rs. 698", "Rs. 700"], answer: "Rs. 698" },
+                { question: "A vendor bought toffees at 6 for a rupee. How many for a rupee must he sell to gain 20%?", options: ["3", "4", "5", "Cannot be determined"], answer: "5" },
+                { question: "A grocer has a sale of Rs. 6435, Rs. 6927, Rs. 6855, Rs. 7230 and Rs. 6562 for 5 consecutive months. How much sale must he have in the sixth month so that he gets an average sale of Rs. 6500?", options: ["Rs. 4991", "Rs. 5991", "Rs. 6001", "Rs. 6991"], answer: "Rs. 4991" },
+                { question: "The greatest number of four digits which is divisible by 15, 25, 40 and 75 is:", options: ["9000", "9400", "9600", "9800"], answer: "9600" },
+                { question: "If 1/3 of a tank holds 80 litres of water, then the quantity of water that 1/2 tank holds is:", options: ["100 litres", "120 litres", "240 litres", "80 litres"], answer: "120 litres" },
+                { question: "The price of 10 chairs is equal to that of 4 tables. The price of 15 chairs and 2 tables together is Rs. 4000. The total price of 12 chairs and 3 tables is:", options: ["Rs. 3500", "Rs. 3750", "Rs. 3840", "Rs. 3900"], answer: "Rs. 3900" },
+                { question: "If log 27 = 1.431, then the value of log 9 is:", options: ["0.954", "0.945", "0.958", "0.962"], answer: "0.954" },
+                { question: "The average weight of 8 person's increases by 2.5 kg when a new person comes in place of one of them weighing 65 kg. What might be the weight of the new person?", options: ["75 kg", "75.5 kg", "85 kg", "80 kg"], answer: "85 kg" },
+                ...Array(70).fill({ question: "Sample Aptitude Question", options: ["A", "B", "C", "D"], answer: "A" }) // Placeholder for more questions
+            ].slice(0, 100);
+
+            // EXPANDED: Technical questions bank
+            const allTechnicalQuestions = [
+                { question: "What does HTML stand for?", options: ["Hyper Text Markup Language", "High Tech Modern Language", "Hyperlink and Text Markup Language", "Home Tool Markup Language"], answer: "Hyper Text Markup Language" },
+                { question: "Which of the following is a programming language?", options: ["HTML", "CSS", "Python", "XML"], answer: "Python" },
+                { question: "What is the main function of a CPU?", options: ["Store data", "Display graphics", "Execute instructions", "Connect to the internet"], answer: "Execute instructions" },
+                { question: "Which protocol is used to send email?", options: ["FTP", "HTTP", "SMTP", "POP3"], answer: "SMTP" },
+                { question: "What does 'LAN' stand for?", options: ["Long Area Network", "Local Area Network", "Light Area Network", "Logical Area Network"], answer: "Local Area Network" },
+                { question: "In object-oriented programming, what is inheritance?", options: ["A way to create new classes from existing classes", "A method for storing data", "A type of data structure", "A security feature"], answer: "A way to create new classes from existing classes" },
+                { question: "What is a 'firewall' used for in computer networks?", options: ["To prevent overheating", "To block unauthorized access", "To increase internet speed", "To store passwords"], answer: "To block unauthorized access" },
+                { question: "Which data structure uses LIFO (Last-In, First-Out)?", options: ["Queue", "Stack", "Array", "Linked List"], answer: "Stack" },
+                { question: "What is the time complexity of a binary search algorithm?", options: ["O(n)", "O(n^2)", "O(log n)", "O(1)"], answer: "O(log n)" },
+                { question: "What does SQL stand for?", options: ["Structured Query Language", "Simple Query Language", "Standard Query Language", "Sequential Query Language"], answer: "Structured Query Language" },
+                { question: "What is the purpose of a DNS server?", options: ["To store website files", "To translate domain names to IP addresses", "To secure network traffic", "To manage email accounts"], answer: "To translate domain names to IP addresses" },
+                { question: "What is a 'deadlock' in an operating system?", options: ["A system crash", "A situation where two or more processes are blocked forever, waiting for each other", "A security vulnerability", "A type of virus"], answer: "A situation where two or more processes are blocked forever, waiting for each other" },
+                { question: "Which of these is NOT a principle of OOP?", options: ["Encapsulation", "Inheritance", "Polymorphism", "Procedural Calling"], answer: "Procedural Calling" },
+                { question: "What is the default port for HTTP?", options: ["80", "443", "21", "22"], answer: "80" },
+                { question: "In database terms, what is a 'primary key'?", options: ["The first key in a table", "A key used for encryption", "A unique identifier for a record in a table", "A foreign key from another table"], answer: "A unique identifier for a record in a table" },
+                { question: "What is 'git'?", options: ["A programming language", "A database system", "A distributed version control system", "A text editor"], answer: "A distributed version control system" },
+                { question: "What does API stand for?", options: ["Application Programming Interface", "Advanced Programming Interface", "Application Protocol Interface", "Advanced Protocol Interface"], answer: "Application Programming Interface" },
+                { question: "Which data structure is best for implementing a priority queue?", options: ["Stack", "Array", "Heap", "Linked List"], answer: "Heap" },
+                { question: "What is the difference between TCP and UDP?", options: ["TCP is faster but less reliable", "UDP is connection-oriented", "TCP is connection-oriented and reliable", "There is no difference"], answer: "TCP is connection-oriented and reliable" },
+                { question: "What does CSS stand for?", options: ["Cascading Style Sheets", "Creative Style Sheets", "Computer Style Sheets", "Colorful Style Sheets"], answer: "Cascading Style Sheets" },
+                { question: "What is the purpose of the 'finally' block in a try-catch-finally statement?", options: ["To catch exceptions", "To execute code regardless of whether an exception is thrown", "To declare variables", "To end the program"], answer: "To execute code regardless of whether an exception is thrown" },
+                { question: "Which of the following sorting algorithms has the worst-case time complexity of O(n^2)?", options: ["Merge Sort", "Quick Sort", "Bubble Sort", "Heap Sort"], answer: "Bubble Sort" },
+                { question: "What is JSON?", options: ["A Java library", "A database", "A lightweight data-interchange format", "A type of server"], answer: "A lightweight data-interchange format" },
+                { question: "What is the role of an Operating System?", options: ["To manage hardware and software resources", "To provide a web browser", "To create documents", "To run a single application"], answer: "To manage hardware and software resources" },
+                { question: "What is the 'cloud' in cloud computing?", options: ["A physical server in your office", "A network of remote servers hosted on the Internet", "A type of data storage device", "A new programming language"], answer: "A network of remote servers hosted on the Internet" },
+                ...Array(50).fill({ question: "Sample Technical Question", options: ["A", "B", "C", "D"], answer: "A" }) // Placeholder for more questions
+            ].slice(0, 75);
+
+            let currentQuizQuestions = [];
+            let currentQuestionIndex = 0;
+            let userAnswers = [];
+            let score = 0;
+            let activeQuizType = '';
+
+            // --- EVENT LISTENERS ---
+            startLogicalQuizBtn.addEventListener('click', () => initializeQuiz('logical'));
+            startAptitudeQuizBtn.addEventListener('click', () => initializeQuiz('aptitude'));
+            startTechnicalQuizBtn.addEventListener('click', () => initializeQuiz('technical'));
+
+            startBtn.addEventListener('click', startQuiz);
+            restartBtn.addEventListener('click', startQuiz);
+            backToSelectionBtn.addEventListener('click', () => {
+                switchScreen(quizScreen, selectScreen);
+                setTimeout(() => {
+                    scoreView.classList.add('hidden');
+                    startView.classList.remove('hidden');
+                    activeQuizType = '';
+                }, 500);
+            });
+            downloadBtn.addEventListener('click', downloadResults);
+            skipBtn.addEventListener('click', skipQuestion);
+            endQuizBtn.addEventListener('click', showScore);
+            
+            // --- FUNCTIONS ---
+
+            function initializeQuiz(type) {
+                activeQuizType = type;
+                if (type === 'logical') {
+                    quizTitle.innerText = 'Logical Reasoning Quiz';
+                    quizDescription.innerText = 'Test your problem-solving and critical thinking skills with 7 random questions.';
+                } else if (type === 'aptitude') {
+                    quizTitle.innerText = 'Aptitude Quiz';
+                    // UPDATED description
+                    quizDescription.innerText = 'Challenge your numerical and problem-solving abilities with 15 random questions.';
+                } else if (type === 'technical') {
+                    quizTitle.innerText = 'Technical Quiz';
+                    // UPDATED description
+                    quizDescription.innerText = 'Assess your knowledge of core technology concepts with 15 random questions.';
+                }
+                switchScreen(selectScreen, quizScreen);
+            }
+
+            function getRandomQuestions(array, numQuestions) {
+                const shuffled = [...array].sort(() => 0.5 - Math.random());
+                return shuffled.slice(0, numQuestions);
+            }
+
+            function switchScreen(from, to) {
+                from.style.opacity = '0';
+                setTimeout(() => {
+                    from.classList.add('hidden');
+                    to.classList.remove('hidden');
+                    to.style.opacity = '1';
+                }, 300);
+            }
+
+            function startQuiz() {
+                // MODIFIED: Select 15 questions for aptitude and technical
+                if (activeQuizType === 'logical') {
+                    currentQuizQuestions = getRandomQuestions(allLogicalQuestions, 7);
+                } else if (activeQuizType === 'aptitude') {
+                    currentQuizQuestions = getRandomQuestions(allAptitudeQuestions, 15);
+                } else if (activeQuizType === 'technical') {
+                    currentQuizQuestions = getRandomQuestions(allTechnicalQuestions, 15);
+                }
+                
+                currentQuestionIndex = 0;
+                score = 0;
+                userAnswers = [];
+                startView.classList.add('hidden');
+                scoreView.classList.add('hidden');
+                questionView.classList.remove('hidden');
+                showQuestion();
+            }
+
+            function showQuestion() {
+                resetState();
+                const currentQuestion = currentQuizQuestions[currentQuestionIndex];
+                questionText.innerText = currentQuestion.question;
+                questionCounter.innerText = `Question ${currentQuestionIndex + 1}/${currentQuizQuestions.length}`;
+
+                currentQuestion.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.innerText = option;
+                    button.classList.add('block', 'w-full', 'text-left', 'p-4', 'border', 'rounded-lg', 'bg-gray-50', 'hover:bg-blue-100', 'hover:border-blue-300', 'transition', 'duration-200');
+                    button.addEventListener('click', () => selectAnswer(button, option));
+                    optionsContainer.appendChild(button);
+                });
+            }
+            
+            function resetState() {
+                while (optionsContainer.firstChild) {
+                    optionsContainer.removeChild(optionsContainer.firstChild);
+                }
+            }
+
+            function nextQuestion() {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuizQuestions.length) {
+                    showQuestion();
+                } else {
+                    showScore();
+                }
+            }
+
+            function selectAnswer(selectedButton, selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption;
+                Array.from(optionsContainer.children).forEach(button => {
+                    button.disabled = true;
+                    if (button === selectedButton) {
+                        button.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
+                        button.classList.remove('hover:bg-blue-100');
+                    }
+                });
+                setTimeout(nextQuestion, 400);
+            }
+
+            function skipQuestion() {
+                userAnswers[currentQuestionIndex] = 'skipped';
+                nextQuestion();
+            }
+
+            function showScore() {
+                questionView.classList.add('hidden');
+                scoreView.classList.remove('hidden');
+                
+                let correct = 0;
+                let wrong = 0;
+                let skipped = 0;
+
+                currentQuizQuestions.forEach((question, index) => {
+                    const userAnswer = userAnswers[index];
+                    if (userAnswer === 'skipped' || userAnswer === undefined || userAnswer === null) {
+                        skipped++;
+                    } else if (userAnswer === question.answer) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                });
+                
+                score = correct;
+
+                scoreSummary.innerHTML = `
+                    <div class="text-center px-2">
+                        <div class="flex items-center justify-center text-green-500">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-2xl font-bold">${correct}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Correct</p>
+                    </div>
+                    <div class="text-center px-2">
+                        <div class="flex items-center justify-center text-gray-500">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-2xl font-bold">${skipped}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Skipped</p>
+                    </div>
+                    <div class="text-center px-2">
+                        <div class="flex items-center justify-center text-red-500">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-2xl font-bold">${wrong}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Wrong</p>
+                    </div>
+                `;
+
+                resultsContainer.innerHTML = '';
+                currentQuizQuestions.forEach((question, index) => {
+                    const userAnswer = userAnswers[index];
+                    const isCorrect = userAnswer === question.answer;
+                    const isSkipped = userAnswer === 'skipped' || userAnswer === undefined || userAnswer === null;
+
+                    let borderColorClass = '';
+                    let answerHtml = '';
+
+                    if (isSkipped) {
+                        borderColorClass = 'border-gray-400 bg-gray-50';
+                        answerHtml = `<p class="mt-2 text-sm text-gray-600">You skipped this question.</p>
+                                      <p class="mt-1 text-sm text-green-800">Correct answer: <span class="font-semibold">${question.answer}</span></p>`;
+                    } else if (isCorrect) {
+                        borderColorClass = 'border-green-500 bg-green-50';
+                        answerHtml = `<p class="mt-2 text-sm text-green-800">Your answer: <span class="font-semibold">${userAnswer}</span></p>`;
+                    } else { // Incorrect
+                        borderColorClass = 'border-red-500 bg-red-50';
+                        answerHtml = `<p class="mt-2 text-sm text-red-800">Your answer: <span class="font-semibold">${userAnswer}</span></p>
+                                      <p class="mt-1 text-sm text-green-800">Correct answer: <span class="font-semibold">${question.answer}</span></p>`;
+                    }
+
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item', 'p-4', 'rounded-r-lg', borderColorClass);
+                    
+                    resultItem.innerHTML = `
+                        <p class="font-bold text-gray-800">Q${index + 1}: ${question.question}</p>
+                        ${answerHtml}
+                    `;
+                    resultsContainer.appendChild(resultItem);
+                });
+            }
+
+            function downloadResults() {
+                const quizName = activeQuizType.charAt(0).toUpperCase() + activeQuizType.slice(1);
+                const filename = `${activeQuizType}-quiz-results.txt`;
+
+                let resultsText = `${quizName} Quiz Results\n`;
+                resultsText += `Final Score: ${score} / ${currentQuizQuestions.length}\n`;
+                resultsText += `--------------------------------------\n\n`;
+
+                currentQuizQuestions.forEach((question, index) => {
+                    const userAnswer = userAnswers[index];
+                    const isCorrect = userAnswer === question.answer;
+                    const isSkipped = userAnswer === 'skipped' || userAnswer === undefined || userAnswer === null;
+
+                    let resultString = '';
+                    if (isSkipped) resultString = 'Skipped';
+                    else if (isCorrect) resultString = 'Correct';
+                    else resultString = 'Incorrect';
+
+                    resultsText += `Question ${index + 1}: ${question.question}\n`;
+                    resultsText += `Your Answer: ${isSkipped ? 'N/A' : userAnswer}\n`;
+                    resultsText += `Correct Answer: ${question.answer}\n`;
+                    resultsText += `Result: ${resultString}\n`;
+                    resultsText += `--------------------------------------\n\n`;
+                });
+
+                const blob = new Blob([resultsText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+    </script>
+</body>
+</html>
